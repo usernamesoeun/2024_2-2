@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>네모벽돌 피하기 게임</title>
+
+<style type="text/css">
+
+@font-face {
+    font-family: 'DOSIyagiMedium';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/DOSIyagiMedium.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+    html{font-family: 'DOSIyagiMedium'; }
+
+
+    body {  margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f0f0;
+            z-index: 1;
+            background: url(backtv.png);
+            background-size: cover;}
+
+        canvas {
+            background-color: #624566;
+         
+            margin-bottom: 20px;
+            font-family: ;
+            z-index: 1;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: 'DOSIyagiMedium';
+            z-index: 1;
+            border: none;
+        }
+
+</style>
+
+</head>
+
+
+
+<body>
+
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div class="controls">
+        <button id="startBtn">게임시작</button>
+        <button id="restartBtn" disabled>다시시작</button>
+        <button id="speedUpBtn">속도 ↑</button>
+        <button id="speedDownBtn">속도 ↓</button>
+    </div>
+
+
+
+<script src="game.js"></script>
+
+<script type="text/javascript">
+	
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+const speedUpBtn = document.getElementById('speedUpBtn');
+const speedDownBtn = document.getElementById('speedDownBtn');
+
+// 플레이어 설정
+const player = {
+    x: canvas.width / 2 - 20,
+    y: canvas.height - 50,
+    width: 40,
+    height: 40,
+    speed: 5,
+    dx: 0
+};
+
+// 벽돌 설정
+let bricks = [];
+const brickWidth = 30;
+const brickHeight = 20;
+let brickSpeed = 3;
+let gameOver = false;
+let gameStarted = false;
+
+// 키 입력 처리
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+
+// 플레이어 그리기
+function drawPlayer() {
+    ctx.fillStyle = '#cefffe';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+// 벽돌 그리기
+function drawBricks() {
+    ctx.fillStyle = '#ff9ec1';
+    bricks.forEach(brick => {
+        ctx.fillRect(brick.x, brick.y, brickWidth, brickHeight);
+    });
+}
+
+// 벽돌 생성
+function createBrick() {
+    const x = Math.random() * (canvas.width - brickWidth);
+    bricks.push({ x, y: 0 });
+}
+
+// 벽돌 이동 및 충돌 체크
+function moveBricks() {
+    bricks.forEach((brick, index) => {
+        brick.y += brickSpeed;
+
+        // 충돌 체크
+        if (
+            brick.y + brickHeight > player.y &&
+            brick.x < player.x + player.width &&
+            brick.x + brickWidth > player.x
+        ) {
+            gameOver = true;
+        }
+
+        // 벽돌이 화면 아래로 나가면 제거
+        if (brick.y > canvas.height) {
+            bricks.splice(index, 1);
+        }
+    });
+}
+
+// 플레이어 이동
+function movePlayer() {
+    player.x += player.dx;
+
+    // 화면 경계 체크
+    if (player.x < 0) {
+        player.x = 0;
+    }
+    if (player.x + player.width > canvas.width) {
+        player.x = canvas.width - player.width;
+    }
+}
+
+// 게임 오버 텍스트
+function showGameOver() {
+    ctx.fillStyle = 'white';
+    ctx.font = '36px DOSIyagiMedium';
+    ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+}
+
+// 키 입력 처리 함수
+function keyDown(e) {
+    if (e.key === 'ArrowRight') {
+        player.dx = player.speed;
+    } else if (e.key === 'ArrowLeft') {
+        player.dx = -player.speed;
+    }
+}
+
+function keyUp(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        player.dx = 0;
+    }
+}
+
+// 게임 루프
+function update() {
+    if (!gameOver && gameStarted) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 플레이어 및 벽돌 그리기
+        drawPlayer();
+        drawBricks();
+
+        // 플레이어 및 벽돌 이동
+        movePlayer();
+        moveBricks();
+
+        // 벽돌 생성
+        if (Math.random() < 0.02) {
+            createBrick();
+        }
+
+        requestAnimationFrame(update);
+    } else if (gameOver) {
+        showGameOver();
+        restartBtn.disabled = false;
+    }
+}
+
+// 게임 시작
+function startGame() {
+    gameOver = false;
+    gameStarted = true;
+    restartBtn.disabled = true;
+    startBtn.disabled = true;
+    bricks = [];
+    player.x = canvas.width / 2 - 20;
+    update();
+}
+
+// 게임 다시 시작
+function restartGame() {
+    gameOver = false;
+    gameStarted = true;
+    restartBtn.disabled = true;
+    bricks = [];
+    player.x = canvas.width / 2 - 20;
+    update();
+}
+
+// 속도 조절
+function increaseSpeed() {
+    brickSpeed += 1;
+}
+
+function decreaseSpeed() {
+    if (brickSpeed > 1) {
+        brickSpeed -= 1;
+    }
+}
+
+// 버튼 이벤트 리스너
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', restartGame);
+speedUpBtn.addEventListener('click', increaseSpeed);
+speedDownBtn.addEventListener('click', decreaseSpeed);
+
+</script>
+
+
+
+</body>
+</html>
